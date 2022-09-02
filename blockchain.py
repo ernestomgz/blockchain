@@ -6,23 +6,23 @@ import json
 from textwrap import dedent
 from uuid import uuid4
 
-from flask import Flask, jsonify, request
-
  
 # Flask is for creating the web
 # app and jsonify is for
 # displaying the blockchain
 from flask import Flask, jsonify, request
- 
- 
+
+
 class Blockchain:
-   
+    """
+    Clase que representa una Blockchain.
+    """
+
     # This function is created
     # to create the very first
     # block and set its hash to "0"
     def __init__(self):
-        self.chain = []
-        
+        self.chain = [] 
         self.current_transactions = []
         self.create_block(previous_hash='0',proof=1)
  
@@ -30,16 +30,27 @@ class Blockchain:
     # to add further blocks
     # into the chain
     def create_block(self,  previous_hash, proof):
+        """
+        Crea un bloque al que se le asocian todas las
+        transaccciones pendientes de la Blockchain.
+
+        :param previus_hash:    Hash del bloque anterior.
+        :param proof:           Prueba asociada al bloque a crear.
+
+        :return:    Contenido JSON del bloque.
+        """
+
         block = {'index': len(self.chain) + 1,
                  'timestamp': str(datetime.datetime.now()),
                  'trasctions':self.current_transactions,
                  'proof': proof,
                  'previous_hash': previous_hash}
+        #add the block to the chain
+        self.chain.append(block)
+
         #reset transaction list
         self.current_transactions = []
 
-        #add the block to the chain
-        self.chain.append(block)
         return block
 
 
@@ -66,12 +77,15 @@ class Blockchain:
     def proof_of_work(self, previous_proof):
         new_proof = 1
         check_proof = False
-         
+
+        difficulty= ('42'*(len(self.chain)//10+1))
+        
         while check_proof is False:
-            hash_operation = hashlib.sha256(
-                str(new_proof**2 - previous_proof**2).encode()).hexdigest()
-            if hash_operation[-4:] == '4242':
+            hash_operation = hashlib.sha256((str(previous_proof) + str(new_proof)).encode()).hexdigest()
+            if hash_operation[-len(difficulty):] == difficulty:
+            # if hash_operation[-4:] == '4242':
                 check_proof = True
+                print("hash:   "+ hash_operation)
             else:
                 new_proof += 1
                  
@@ -82,18 +96,15 @@ class Blockchain:
         return hashlib.sha256(encoded_block).hexdigest()
  
     def chain_valid(self, chain):
-        previous_block = chain[0]
         block_index = 1
-         
+        previous_block = blockchain.print_previous_block()
+        
         while block_index < len(chain):
             block = chain[block_index]
-            if block['previous_hash'] != self.hash(previous_block):
-                return False
-               
             previous_proof = previous_block['proof']
-            proof = block['proof']
-            hash_operation = hashlib.sha256(
-                str(proof**2 - previous_proof**2).encode()).hexdigest()
+            new_proof = blockchain.proof_of_work(previous_proof)
+            hash_operation = hashlib.sha256((str(previous_proof) + str(new_proof)).encode()).hexdigest()
+            #hash_operation = hashlib.sha256((str(previous_proof) + str(new_proof)+"a").encode()).hexdigest()
              
             if hash_operation[-4:] != '4242':
                 return False
@@ -102,6 +113,9 @@ class Blockchain:
          
         return True
  
+    @property
+    def last_block(self):
+        return self.chain[-1]
  
 # Creating the Web
 # App using flask
@@ -118,6 +132,7 @@ def mine_block():
     previous_proof = previous_block['proof']
     proof = blockchain.proof_of_work(previous_proof)
     previous_hash = blockchain.hash(previous_block)
+    blockchain.new_transaction("", "miner", 10)
     block = blockchain.create_block(proof, previous_hash)
      
     response = {'message': 'A block is MINED',
@@ -125,6 +140,7 @@ def mine_block():
                 'timestamp': block['timestamp'],
                 'proof': block['proof'],
                 'previous_hash': block['previous_hash']}
+    
      
     return jsonify(response), 200
  
@@ -138,6 +154,7 @@ def display_chain():
 # Check validity of blockchain
 @app.route('/valid', methods=['GET'])
 def valid():
+
     valid = blockchain.chain_valid(blockchain.chain)
      
     if valid:

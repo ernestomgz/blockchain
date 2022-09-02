@@ -98,6 +98,8 @@ class Blockchain:
     def chain_valid(self, chain):
         block_index = 1
         previous_block = blockchain.print_previous_block()
+
+        difficulty= ('42'*(len(self.chain)-1//10+1))
         
         while block_index < len(chain):
             block = chain[block_index]
@@ -106,7 +108,7 @@ class Blockchain:
             hash_operation = hashlib.sha256((str(previous_proof) + str(new_proof)).encode()).hexdigest()
             #hash_operation = hashlib.sha256((str(previous_proof) + str(new_proof)+"a").encode()).hexdigest()
              
-            if hash_operation[-4:] != '4242':
+            if hash_operation[-len(difficulty):] == difficulty:
                 return False
             previous_block = block
             block_index += 1

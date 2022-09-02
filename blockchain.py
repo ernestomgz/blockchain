@@ -12,7 +12,6 @@ from uuid import uuid4
 # displaying the blockchain
 from flask import Flask, jsonify, request
 
-
 class Blockchain:
     """
     Clase que representa una Blockchain.
